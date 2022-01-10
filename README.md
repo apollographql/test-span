@@ -3,7 +3,7 @@
 A macro and utilities to do snapshot tests on tracing spans.
 
   <p>
-  <a href="https://app.circleci.com/pipelines/github/apollographql/test-span">
+  <a href="https://docs.rs/test-span">
       <img src="https://docs.rs/test-span/badge.svg" alt="docs">
   </a>
   <a href="https://app.circleci.com/pipelines/github/apollographql/test-span">
