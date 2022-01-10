@@ -2,6 +2,23 @@
 
 A macro and utilities to do snapshot tests on tracing spans.
 
+  <p>
+  <a href="https://app.circleci.com/pipelines/github/apollographql/test-span">
+      <img src="https://docs.rs/test-span/badge.svg" alt="docs">
+  </a>
+  <a href="https://app.circleci.com/pipelines/github/apollographql/test-span">
+      <img src="https://circleci.com/gh/circleci/circleci-docs.svg?style=shield" alt="Build status">
+  </a>
+  <a href="LICENSE-APACHE">
+    <img
+    src="https://img.shields.io/badge/license-apache2-green.svg" alt="Apache 2.0 License">
+  </a>
+  <a href="LICENSE-MIT">
+    <img
+    src="https://img.shields.io/badge/license-mit-blue.svg" alt="MIT License">
+  </a>
+</p>
+
 ## How to use
 
 Refer to the [tests](test-span/tests/tests.rs) for a more exhaustive list of features and behaviors:
@@ -56,11 +73,15 @@ Spans and logs are hard to track across thread spawns. However we're providing y
     }
 ```
 
+## Contributing
+
+More information can be found in [the contribution docs](CONTRIBUTING.md)
+
 ## License
 
 <sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
+Licensed under either of [Apache License, Version
+2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
 </sup>
 
 <br>

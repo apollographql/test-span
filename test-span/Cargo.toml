@@ -7,7 +7,7 @@ description = "macro and utilities to do snapshot tests on tracing spans"
 repository = "https://github.com/apollographql/test-span"
 keywords = ["tracing", "span", "log", "test", "snapshot"]
 categories = ["development-tools::testing"]
-
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 daggy = { version = "0.8.0", features = ["serde-1", "stable_dag"] }
