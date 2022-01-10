@@ -110,6 +110,7 @@ pub fn get_spans_for_root(root_id: &Id, level: &Level) -> Span {
 pub fn get_logs_for_root(root_id: &Id, level: &Level) -> Records {
     Report::from_root(root_id.into_u64()).logs(level)
 }
+
 pub mod prelude {
     pub use crate::{get_all_logs, get_logs_for_root, get_spans_for_root, get_telemetry_for_root};
     pub use test_span_macro::test_span;
