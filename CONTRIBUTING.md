@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/apollographql/space-kit/main/src/illustrations/svgs/astronaut1.svg" width="100%" height="144">
 
-# Contributing to Apollo Router
+# Contributing to test-span
 
 ## Before you contribute!
 
@@ -13,7 +13,7 @@ That will allow us to figure out a way to solve the issue together, and possibly
 Test-span is written in [Rust]. In order to contribute, you'll need to have Rust installed. To install Rust,
 visit [https://www.rust-lang.org/tools/install].
 
-Rust has a build tool and package manager called [`cargo`] that you'll use to interact with the Apollo Router's code.
+Rust has a build tool and package manager called [`cargo`] that you'll use to interact with test-span's code.
 
 To build:
 
