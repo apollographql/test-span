@@ -1,0 +1,2 @@
+[workspace]
+members = ["test-span", "test-span-macro"]

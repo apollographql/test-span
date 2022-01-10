@@ -1,0 +1,21 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/rust:1.45.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - rust-target-v1-test-{{ checksum "Cargo.toml" }}-{{ .Branch }}-{{ checksum "Cargo.lock" }}
+            - rust-target-v1-test-{{ checksum "Cargo.toml" }}-{{ .Branch }}
+            - rust-target-v1-test-{{ checksum "Cargo.toml" }}
+      - run: cargo build
+      - run: cargo test
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all --tests -- -D warnings
+      - save_cache:
+          key: rust-target-v1-test-{{ checksum "Cargo.toml" }}-{{ .Branch }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - target/
