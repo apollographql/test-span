@@ -70,26 +70,43 @@ pub use report::{Records, Report, Span};
 static INIT: Lazy<Result<(), TryInitError>> =
     Lazy::new(|| tracing_subscriber::registry().with(Layer {}).try_init());
 
+/// `init` must be called before a test is run.
+/// This is fortunately automatically done by the test_span macro
+///
+/// if `init` panics, this means the global tracing subscriber has already been set.
+/// look for other crates that might do that.
 pub fn init() {
     Lazy::force(&INIT).as_ref().expect("couldn't set span-test subscriber as a default, maybe tracing has already been initialized somewhere else ?");
 }
 
+/// Unlike its `get_logs` counterpart provided by the trace_span macro,
+/// `get_all_logs` will return all of the module's tests logs.
 pub fn get_all_logs(level: &Level) -> Records {
     let logs = layer::ALL_LOGS.lock().unwrap().clone();
 
     Records::new(logs.all_records_for_level(level))
 }
 
+/// Returns both the output of `get_spans_for_root` and `get_logs_for_root`
 pub fn get_telemetry_for_root(root_id: &Id, level: &Level) -> (Span, Records) {
     let report = Report::from_root(root_id.into_u64());
 
     (report.spans(level), report.logs(level))
 }
 
+/// Returns a `Span`, a Tree containing all the spans that are children of `root_id`.
+///
+/// This function filters the `Span` children and `Records`,
+/// to only return the ones that match the set verbosity level
 pub fn get_spans_for_root(root_id: &Id, level: &Level) -> Span {
     Report::from_root(root_id.into_u64()).spans(level)
 }
 
+/// Returns Records, which is a Vec, containing all entries recorded by children of `root_id`.
+///
+/// This function filters the `Records`to only return the ones that match the set verbosity level.
+///
+/// / ! \ Logs recorded in spawned threads won't appear here / ! \ use `get_all_logs` instead.
 pub fn get_logs_for_root(root_id: &Id, level: &Level) -> Records {
     Report::from_root(root_id.into_u64()).logs(level)
 }
