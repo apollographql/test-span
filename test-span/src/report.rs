@@ -14,16 +14,24 @@ use crate::LazyMutex;
 
 pub(crate) static ALL_DAGS: LazyMutex<IndexMap<u64, Dag<u64, ()>>> = Lazy::new(Default::default);
 
+/// A tree which is effectively a Tree containing all the spans
+///
+/// It can't do much yet, except being Serialized / Deserialized, which comes in handy for snapshots.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Span {
+    // the span id
     #[serde(skip_serializing)]
     id: u64,
+    // the function name
     name: String,
+    // the recorded variables and logs
     record: RecordWithMetadata,
+    // the node's children
     children: LinkedHashMap<String, Span>,
 }
 
 impl Span {
+    // Create a span from a name, a span_id, and recorded variables
     pub fn from(name: String, id: u64, record: RecordWithMetadata) -> Self {
         Self {
             name,
@@ -202,24 +210,25 @@ impl Report {
     }
 }
 
+/// A Vec of log entries.
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 pub struct Records(Vec<Record>);
 
 impl Records {
+    /// Create a Records from log entries
     pub fn new(records: Vec<Record>) -> Self {
         Self(records)
     }
+
+    /// check if log message has been stored with the given payload.
     pub fn contains_message(&self, lookup: impl AsRef<str>) -> bool {
         self.contains_value("message", RecordValue::Debug(lookup.as_ref().to_string()))
     }
 
+    /// check if log entry (this can be span attributes or log messages) has been stored with the given payload.
     pub fn contains_value(&self, field_name: impl AsRef<str>, lookup: RecordValue) -> bool {
         self.0
             .iter()
             .any(|(field, value)| field.as_str() == field_name.as_ref() && value == &lookup)
-    }
-
-    pub fn push(&mut self, record: Record) {
-        self.0.push(record)
     }
 }
