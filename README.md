@@ -43,7 +43,8 @@ fn a_test() {
 
 // Test span plays well with async
 #[test_span(tokio::test)]
-// you can specify the span / log level you would like to track like this:
+// you can specify the span / log level
+// you would like to track like this:
 #[level(tracing::Level::INFO)]
 async fn an_sync_test() {
     do_something_async().await;
@@ -62,14 +63,18 @@ Spans and logs are hard to track across thread spawns. However we're providing y
 #[test_span]
 fn track_across_threads() {
     std::thread::spawn(|| {
-        tracing::info!("will only show up in get_all_logs!");
+        tracing::info!("only in get_all_logs!");
     })
     .join()
     .unwrap();
 
+    let logs = get_logs();
+    // not in get_logs()
+    assert!(!logs.contains_message("only in get_all_logs!");
+
     // get_all_logs takes a filter Level
     let all_logs = test_span::get_all_logs(&tracing::Level::INFO);
-    assert!(all_logs.contains_message("will only show up in get_all_logs!"));
+    assert!(all_logs.contains_message("only in get_all_logs!"));
 }
 ```
 
