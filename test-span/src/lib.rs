@@ -48,10 +48,14 @@
 //!  └───────────┘   └───────────┘
 //! ```
 
+use layer::Layer;
 use once_cell::sync::Lazy;
-use prelude::*;
 use std::sync::{Arc, Mutex};
-use tracing_subscriber::util::TryInitError;
+use tracing::{Id, Level};
+use tracing_subscriber::{
+    prelude::__tracing_subscriber_SubscriberExt,
+    util::{SubscriberInitExt, TryInitError},
+};
 type LazyMutex<T> = Lazy<Arc<Mutex<T>>>;
 
 mod attribute;
@@ -59,6 +63,9 @@ mod layer;
 mod log;
 mod record;
 mod report;
+
+pub use record::{Record, RecordValue};
+pub use report::{Records, Report, Span};
 
 static INIT: Lazy<Result<(), TryInitError>> =
     Lazy::new(|| tracing_subscriber::registry().with(Layer {}).try_init());
@@ -81,10 +88,7 @@ pub fn get_all_logs(level: &Level) -> Records {
 }
 
 /// Returns both the output of `get_spans_for_root` and `get_logs_for_root`
-pub fn get_telemetry_for_root(
-    root_id: &crate::reexports::tracing::Id,
-    level: &Level,
-) -> (Span, Records) {
+pub fn get_telemetry_for_root(root_id: &Id, level: &Level) -> (Span, Records) {
     let report = Report::from_root(root_id.into_u64());
 
     (report.spans(level), report.logs(level))
@@ -94,7 +98,7 @@ pub fn get_telemetry_for_root(
 ///
 /// This function filters the `Span` children and `Records`,
 /// to only return the ones that match the set verbosity level
-pub fn get_spans_for_root(root_id: &crate::reexports::tracing::Id, level: &Level) -> Span {
+pub fn get_spans_for_root(root_id: &Id, level: &Level) -> Span {
     Report::from_root(root_id.into_u64()).spans(level)
 }
 
@@ -103,16 +107,11 @@ pub fn get_spans_for_root(root_id: &crate::reexports::tracing::Id, level: &Level
 /// This function filters the `Records`to only return the ones that match the set verbosity level.
 ///
 /// / ! \ Logs recorded in spawned threads won't appear here / ! \ use `get_all_logs` instead.
-pub fn get_logs_for_root(root_id: &crate::reexports::tracing::Id, level: &Level) -> Records {
+pub fn get_logs_for_root(root_id: &Id, level: &Level) -> Records {
     Report::from_root(root_id.into_u64()).logs(level)
 }
+
 pub mod prelude {
-    pub(crate) use crate::layer::Layer;
-    pub use crate::record::RecordValue;
-    pub use crate::reexports::tracing::{Instrument, Level};
-    pub use crate::reexports::tracing_futures::WithSubscriber;
-    pub use crate::reexports::tracing_subscriber::prelude::*;
-    pub use crate::report::{Records, Report, Span};
     pub use crate::{get_all_logs, get_logs_for_root, get_spans_for_root, get_telemetry_for_root};
     pub use test_span_macro::test_span;
 }

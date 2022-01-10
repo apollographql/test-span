@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod traced_span_tests {
-    use test_span::prelude::*;
+    use test_span::reexports::tracing::Level;
+    use test_span::{prelude::*, RecordValue};
+    use tracing::Instrument;
 
     #[test_span]
     fn tracing_macro_works() {
