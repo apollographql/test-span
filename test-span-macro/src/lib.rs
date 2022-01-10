@@ -21,7 +21,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_attrs = &test_fn.attrs;
 
-    let mut tracing_level = quote!(::tracing::Level::DEBUG);
+    let mut tracing_level = quote!(test_span::reexports::tracing::Level::DEBUG);
 
     // Get tracing level from #[level(tracing::Level::INFO)]
     let fn_attrs = fn_attrs
@@ -66,7 +66,8 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
       #[#macro_attrs]
       #(#fn_attrs)*
       #maybe_async fn #test_name() #ret {
-        #maybe_async fn inner_test(get_telemetry: impl Fn() -> (Span, Records), get_logs: impl Fn() -> Records, get_spans: impl Fn() -> Span) #ret
+        use test_span::reexports::tracing::Instrument;
+        #maybe_async fn inner_test(get_telemetry: impl Fn() -> (test_span::Span, test_span::Records), get_logs: impl Fn() -> test_span::Records, get_spans: impl Fn() -> test_span::Span) #ret
           #body
 
 
