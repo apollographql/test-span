@@ -95,7 +95,7 @@ fn sync_test() -> TokenStream2 {
 }
 fn subscriber_boilerplate(level: TokenStream2) -> TokenStream2 {
     quote! {
-        ::test_span::init();
+        ::test_span::with_env_filter(::tracing_subscriber::EnvFilter::from_default_env().add_directive(#level.into()));
 
         let level = &#level;
 

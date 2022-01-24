@@ -75,7 +75,7 @@ mod traced_span_tests {
 
     #[test]
     fn tracing_works() {
-        test_span::init();
+        test_span::init_default();
 
         let root_id = {
             let root_span = test_span::reexports::tracing::span!(::tracing::Level::DEBUG, "root");
@@ -107,7 +107,7 @@ mod traced_span_tests {
 
     #[tokio::test]
     async fn async_tracing_works() {
-        test_span::init();
+        test_span::init_default();
 
         let root_id = {
             let root_span = test_span::reexports::tracing::span!(::tracing::Level::INFO, "root");
