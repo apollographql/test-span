@@ -41,14 +41,14 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 "target" => {
                     let value: ExprAssign = attr.parse_args().expect("each targetFilter directive expects a single assignment expression. example: #[targetFilter(apollo_router=debug)]");
-                    // foo = Level::INFO => .with_target("foo", Level::INFO)
+                    // foo = Level::INFO => .with_target("foo".to_string(), Level::INFO)
                     let name = value.left;
                     let mut target_name = quote!(#name).to_string();
                     target_name.retain(|c| !c.is_whitespace());
 
                     let target_value = value.right;
 
-                    target_directives.push(quote!(.with_target(#target_name, #target_value)));
+                    target_directives.push(quote!(.with_target(#target_name .to_string(), #target_value)));
 
                     false
                 }

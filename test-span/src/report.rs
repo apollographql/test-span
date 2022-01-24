@@ -41,7 +41,6 @@ impl Filter {
             .iter()
             .filter(|(key, _)| metadata.target.starts_with(key.as_str()))
             .collect::<Vec<_>>();
-
         for_target.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len()));
 
         let target = for_target
