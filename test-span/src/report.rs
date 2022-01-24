@@ -5,14 +5,56 @@ use daggy::Walker;
 use indexmap::IndexMap;
 use linked_hash_map::LinkedHashMap;
 use once_cell::sync::Lazy;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use tracing::Level;
 
+use crate::attribute::OwnedMetadata;
 use crate::layer::{ALL_LOGS, ALL_SPANS, SPAN_ID_TO_ROOT_AND_NODE_INDEX};
 use crate::log::LogsRecorder;
 use crate::record::{Record, RecordValue, RecordWithMetadata, Recorder};
 use crate::LazyMutex;
 
 pub(crate) static ALL_DAGS: LazyMutex<IndexMap<u64, Dag<u64, ()>>> = Lazy::new(Default::default);
+
+pub struct Filter {
+    default_level: Level,
+    targets: HashMap<String, Level>,
+}
+
+impl Filter {
+    pub fn new(default_level: Level) -> Self {
+        Self {
+            default_level,
+            targets: Default::default(),
+        }
+    }
+
+    pub fn with_target(self, key: String, value: Level) -> Self {
+        let mut targets = self.targets;
+        targets.insert(key, value);
+        Self { targets, ..self }
+    }
+
+    pub fn is_enabled(&self, metadata: &OwnedMetadata) -> bool {
+        let mut for_target = self
+            .targets
+            .iter()
+            .filter(|(key, _)| metadata.target.starts_with(key.as_str()))
+            .collect::<Vec<_>>();
+
+        for_target.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len()));
+
+        let target = for_target
+            .first()
+            .map(|(_, level)| level.clone().clone())
+            .unwrap_or(self.default_level);
+
+        target.ge(&metadata
+            .level
+            .parse::<Level>()
+            .expect("metadata level is invalid"))
+    }
+}
 
 /// A tree which is effectively a Tree containing all the spans
 ///
@@ -92,14 +134,17 @@ impl Report {
         }
     }
 
-    pub fn logs(&self, level: &tracing::Level) -> Records {
+    pub fn logs(&self, filter: &Filter) -> Records {
         if let Some(recorder) = self.spans.get(&self.root_id) {
-            let mut contents = recorder.contents(level);
-            contents.append(self.logs.record_for_span_id_and_level(self.root_id, level));
+            let mut contents = recorder.contents(filter);
+            contents.append(
+                self.logs
+                    .record_for_span_id_and_filter(self.root_id, filter),
+            );
 
             let mut records: Vec<_> = contents.entries().cloned().collect();
 
-            self.dfs_logs_insert(&mut records, self.root_index, level);
+            self.dfs_logs_insert(&mut records, self.root_index, filter);
 
             Records::new(records)
         } else {
@@ -107,7 +152,7 @@ impl Report {
         }
     }
 
-    pub fn spans(&self, level: &tracing::Level) -> Span {
+    pub fn spans(&self, filter: &Filter) -> Span {
         if let Some(recorder) = self.spans.get(&self.root_id) {
             let metadata = recorder
                 .metadata()
@@ -116,9 +161,9 @@ impl Report {
                 .expect("recorder without metadata");
             let span_name = format!("{}::{}", metadata.target, metadata.name);
 
-            let mut root_span = Span::from(span_name, self.root_id, recorder.contents(level));
+            let mut root_span = Span::from(span_name, self.root_id, recorder.contents(filter));
 
-            self.dfs_span_insert(&mut root_span, self.root_index, level);
+            self.dfs_span_insert(&mut root_span, self.root_index, filter);
 
             root_span
         } else {
@@ -126,12 +171,7 @@ impl Report {
         }
     }
 
-    fn dfs_logs_insert(
-        &self,
-        records: &mut Vec<Record>,
-        current_node: NodeIndex,
-        level: &tracing::Level,
-    ) {
+    fn dfs_logs_insert(&self, records: &mut Vec<Record>, current_node: NodeIndex, filter: &Filter) {
         for child_node in self.sorted_children(current_node) {
             let child_id = self
                 .node_to_id
@@ -142,20 +182,15 @@ impl Report {
                 .spans
                 .get(child_id)
                 .expect("graph and hashmap are tied; qed")
-                .contents(level);
+                .contents(filter);
 
-            child_record.append(self.logs.record_for_span_id_and_level(*child_id, level));
+            child_record.append(self.logs.record_for_span_id_and_filter(*child_id, filter));
             records.extend(child_record.entries().cloned().into_iter());
-            self.dfs_logs_insert(records, child_node, level);
+            self.dfs_logs_insert(records, child_node, filter);
         }
     }
 
-    fn dfs_span_insert(
-        &self,
-        current_span: &mut Span,
-        current_node: NodeIndex,
-        level: &tracing::Level,
-    ) {
+    fn dfs_span_insert(&self, current_span: &mut Span, current_node: NodeIndex, filter: &Filter) {
         current_span.children = self
             .sorted_children(current_node)
             .filter_map(|child_node| {
@@ -172,12 +207,7 @@ impl Report {
                     .metadata()
                     .expect("couldn't find metadata for child record");
 
-                if &metadata
-                    .level
-                    .parse::<tracing::Level>()
-                    .expect("invalid tracing level")
-                    > level
-                {
+                if !filter.is_enabled(metadata) {
                     return None;
                 }
 
@@ -185,11 +215,11 @@ impl Report {
 
                 let span_key = format!("{} - {}", span_name, child_node.index());
 
-                let mut contents = child_recorder.contents(level);
-                contents.append(self.logs.record_for_span_id_and_level(*child_id, level));
+                let mut contents = child_recorder.contents(filter);
+                contents.append(self.logs.record_for_span_id_and_filter(*child_id, filter));
 
                 let mut child_span = Span::from(span_name, *child_id, contents);
-                self.dfs_span_insert(&mut child_span, child_node, level);
+                self.dfs_span_insert(&mut child_span, child_node, filter);
 
                 Some((span_key, child_span))
             })

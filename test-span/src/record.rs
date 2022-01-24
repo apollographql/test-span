@@ -104,17 +104,10 @@ impl Recorder {
         record.record(&mut self.visitor)
     }
 
-    pub fn contents(&self, level: &tracing::Level) -> RecordWithMetadata {
+    pub fn contents(&self, filter: &crate::Filter) -> RecordWithMetadata {
         let mut r = RecordWithMetadata::new(self.metadata.clone().unwrap());
 
-        if &r
-            .metadata
-            .level
-            .clone()
-            .parse::<tracing::Level>()
-            .expect("invalid level")
-            <= level
-        {
+        if filter.is_enabled(&r.metadata) {
             r.append(self.visitor.0.clone());
         }
         r

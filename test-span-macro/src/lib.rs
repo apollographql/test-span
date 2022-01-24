@@ -22,7 +22,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_attrs = &test_fn.attrs;
 
-    let mut tracing_level = quote!(::test_span::reexports::tracing::Level::DEBUG);
+    let mut level = quote!(::test_span::reexports::tracing::Level::DEBUG);
 
     let mut target_directives: Vec<_> = Vec::new();
 
@@ -36,11 +36,11 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
                     let value: Path = attr.parse_args().expect(
                         "wrong level attribute syntax. Example: #[level(tracing::Level::INFO)]",
                     );
-                    tracing_level = quote!(#value);
+                    level = quote!(#value);
                     false
                 }
                 "target" => {
-                    let value: ExprAssign = attr.parse_args().expect("each targetFilter directive expects a single assignment expression. example: #[levelFilter(apollo_router=debug)]");
+                    let value: ExprAssign = attr.parse_args().expect("each targetFilter directive expects a single assignment expression. example: #[targetFilter(apollo_router=debug)]");
                     // foo = Level::INFO => .with_target("foo", Level::INFO)
                     let name = value.left;
                     let mut target_name = quote!(#name).to_string();
@@ -77,7 +77,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let ret = quote! {#output_type};
 
-    let subscriber_boilerplate = subscriber_boilerplate(tracing_level, target_directives);
+    let subscriber_boilerplate = subscriber_boilerplate(level, target_directives);
 
     quote! {
       #[#macro_attrs]
@@ -115,22 +115,22 @@ fn subscriber_boilerplate(
     target_directives: Vec<TokenStream2>,
 ) -> TokenStream2 {
     quote! {
-        ::test_span::with_targets(::tracing_subscriber::filter::Targets::new().with_default(#level)#(#target_directives)*);
+        let filter = ::test_span::Filter::new(#level) #(#target_directives)*;
 
-        let level = &#level;
+        ::test_span::init();
 
         let root_span = ::test_span::reexports::tracing::span!(#level, "root");
 
         let root_id = root_span.id().clone().expect("couldn't get root span id; this cannot happen.");
 
         #[allow(unused)]
-        let get_telemetry = || ::test_span::get_telemetry_for_root(&root_id, level);
+        let get_telemetry = || ::test_span::get_telemetry_for_root(&root_id, &filter);
 
         #[allow(unused)]
-        let get_logs = || ::test_span::get_logs_for_root(&root_id, level);
+        let get_logs = || ::test_span::get_logs_for_root(&root_id, &filter);
 
 
         #[allow(unused)]
-        let get_spans = || ::test_span::get_spans_for_root(&root_id, level);
+        let get_spans = || ::test_span::get_spans_for_root(&root_id, &filter);
     }
 }

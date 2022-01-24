@@ -49,12 +49,10 @@
 //! ```
 
 use layer::Layer;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
-use tracing::{Id, Level};
-use tracing_subscriber::{
-    filter::Targets, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
-};
+use tracing::Id;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 type LazyMutex<T> = Lazy<Arc<Mutex<T>>>;
 
 mod attribute;
@@ -64,51 +62,41 @@ mod record;
 mod report;
 
 pub use record::{Record, RecordValue};
-pub use report::{Records, Report, Span};
+pub use report::{Filter, Records, Report, Span};
 
-static INIT: OnceCell<()> = OnceCell::new();
-
-/// `with_targets` must be called before a test is run.
-/// This is fortunately automatically done by the test_span macro
-///
-/// if `with_targets` panics, this means the global tracing subscriber has already been set.
-/// look for other crates that might do that.
-pub fn with_targets(targets: Targets) {
-    INIT.get_or_init(|| {
+static INIT: Lazy<()> = Lazy::new(|| {
     tracing_subscriber::registry()
-    .with(targets)
     .with(Layer {})
         .try_init().expect("couldn't set test-span subscriber as a default, maybe tracing has already been initialized somewhere else ?")
-    });
-}
+});
 
 /// `init_default` is the default way to call `with_targets`,
 /// it sets up `Level::DEBUG` and looks for environment variables to filter spans.
-pub fn init_default() {
-    with_targets(Targets::new().with_default(Level::DEBUG))
+pub fn init() {
+    Lazy::force(&INIT);
 }
 
 /// Unlike its `get_logs` counterpart provided by the trace_span macro,
 /// `get_all_logs` will return all of the module's tests logs.
-pub fn get_all_logs(level: &Level) -> Records {
+pub fn get_all_logs(filter: &Filter) -> Records {
     let logs = layer::ALL_LOGS.lock().unwrap().clone();
 
-    Records::new(logs.all_records_for_level(level))
+    Records::new(logs.all_records_for_filter(filter))
 }
 
 /// Returns both the output of `get_spans_for_root` and `get_logs_for_root`
-pub fn get_telemetry_for_root(root_id: &Id, level: &Level) -> (Span, Records) {
+pub fn get_telemetry_for_root(root_id: &Id, filter: &Filter) -> (Span, Records) {
     let report = Report::from_root(root_id.into_u64());
 
-    (report.spans(level), report.logs(level))
+    (report.spans(filter), report.logs(filter))
 }
 
 /// Returns a `Span`, a Tree containing all the spans that are children of `root_id`.
 ///
 /// This function filters the `Span` children and `Records`,
 /// to only return the ones that match the set verbosity level
-pub fn get_spans_for_root(root_id: &Id, level: &Level) -> Span {
-    Report::from_root(root_id.into_u64()).spans(level)
+pub fn get_spans_for_root(root_id: &Id, filter: &Filter) -> Span {
+    Report::from_root(root_id.into_u64()).spans(filter)
 }
 
 /// Returns Records, which is a Vec, containing all entries recorded by children of `root_id`.
@@ -116,8 +104,8 @@ pub fn get_spans_for_root(root_id: &Id, level: &Level) -> Span {
 /// This function filters the `Records`to only return the ones that match the set verbosity level.
 ///
 /// / ! \ Logs recorded in spawned threads won't appear here / ! \ use `get_all_logs` instead.
-pub fn get_logs_for_root(root_id: &Id, level: &Level) -> Records {
-    Report::from_root(root_id.into_u64()).logs(level)
+pub fn get_logs_for_root(root_id: &Id, filter: &Filter) -> Records {
+    Report::from_root(root_id.into_u64()).logs(filter)
 }
 
 pub mod prelude {

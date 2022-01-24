@@ -39,26 +39,26 @@ impl LogsRecorder {
         }
     }
 
-    pub fn record_for_span_id_and_level(
+    pub fn record_for_span_id_and_filter(
         &self,
         span_id: u64,
-        level: &tracing::Level,
+        filter: &crate::Filter,
     ) -> Vec<Record> {
         self.recorders
             .iter()
             .filter_map(|(log_metadata, recorders)| {
-                (log_metadata.is_enabled(level) && log_metadata.span_id == Some(span_id))
+                (filter.is_enabled(log_metadata) && log_metadata.span_id == Some(span_id))
                     .then(|| recorders.contents().cloned())
             })
             .flatten()
             .collect()
     }
 
-    pub fn all_records_for_level(&self, level: &tracing::Level) -> Vec<Record> {
+    pub fn all_records_for_filter(&self, filter: &crate::Filter) -> Vec<Record> {
         self.recorders
             .iter()
             .filter_map(|(log_metadata, recorders)| {
-                (log_metadata.is_enabled(level)).then(|| recorders.contents().cloned())
+                (filter.is_enabled(log_metadata)).then(|| recorders.contents().cloned())
             })
             .flatten()
             .collect()
