@@ -43,15 +43,14 @@ impl Filter {
             .collect::<Vec<_>>();
         for_target.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len()));
 
-        let target = for_target
+        for_target
             .first()
-            .map(|(_, level)| level.clone().clone())
-            .unwrap_or(self.default_level);
-
-        target.ge(&metadata
-            .level
-            .parse::<Level>()
-            .expect("metadata level is invalid"))
+            .map(|(_, level)| level)
+            .unwrap_or(&&self.default_level)
+            .ge(&&metadata
+                .level
+                .parse::<Level>()
+                .expect("metadata level is invalid"))
     }
 }
 
