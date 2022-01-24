@@ -4,6 +4,7 @@ use quote::quote;
 
 use syn::parse_macro_input;
 use syn::AttributeArgs;
+use syn::ExprAssign;
 use syn::ItemFn;
 use syn::Path;
 use syn::ReturnType;
@@ -23,19 +24,35 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut tracing_level = quote!(::test_span::reexports::tracing::Level::DEBUG);
 
+    let mut target_directives: Vec<_> = Vec::new();
+
     // Get tracing level from #[level(tracing::Level::INFO)]
     let fn_attrs = fn_attrs
         .iter()
         .filter(|attr| {
             let path = &attr.path;
-            if quote!(#path).to_string().as_str() == "level" {
-                let value: Path = attr.parse_args().expect(
-                    "wrong level attribute synthax. Example: #[level(tracing::Level::INFO)]",
-                );
-                tracing_level = quote!(#value);
-                false
-            } else {
-                true
+            match quote!(#path).to_string().as_str() {
+                "level" => {
+                    let value: Path = attr.parse_args().expect(
+                        "wrong level attribute syntax. Example: #[level(tracing::Level::INFO)]",
+                    );
+                    tracing_level = quote!(#value);
+                    false
+                }
+                "target" => {
+                    let value: ExprAssign = attr.parse_args().expect("each targetFilter directive expects a single assignment expression. example: #[levelFilter(apollo_router=debug)]");
+                    // foo = Level::INFO => .with_target("foo", Level::INFO)
+                    let name = value.left;
+                    let mut target_name = quote!(#name).to_string();
+                    target_name.retain(|c| !c.is_whitespace());
+
+                    let target_value = value.right;
+
+                    target_directives.push(quote!(.with_target(#target_name, #target_value)));
+
+                    false
+                }
+                _ => true,
             }
         })
         .collect::<Vec<_>>();
@@ -60,7 +77,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let ret = quote! {#output_type};
 
-    let subscriber_boilerplate = subscriber_boilerplate(tracing_level);
+    let subscriber_boilerplate = subscriber_boilerplate(tracing_level, target_directives);
 
     quote! {
       #[#macro_attrs]
@@ -93,9 +110,12 @@ fn sync_test() -> TokenStream2 {
         });
     }
 }
-fn subscriber_boilerplate(level: TokenStream2) -> TokenStream2 {
+fn subscriber_boilerplate(
+    level: TokenStream2,
+    target_directives: Vec<TokenStream2>,
+) -> TokenStream2 {
     quote! {
-        ::test_span::with_env_filter(::tracing_subscriber::EnvFilter::from_default_env().add_directive(#level.into()));
+        ::test_span::with_targets(::tracing_subscriber::filter::Targets::new().with_default(#level)#(#target_directives)*);
 
         let level = &#level;
 

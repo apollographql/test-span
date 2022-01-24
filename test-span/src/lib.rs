@@ -53,7 +53,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use std::sync::{Arc, Mutex};
 use tracing::{Id, Level};
 use tracing_subscriber::{
-    prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    filter::Targets, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
 };
 type LazyMutex<T> = Lazy<Arc<Mutex<T>>>;
 
@@ -68,24 +68,24 @@ pub use report::{Records, Report, Span};
 
 static INIT: OnceCell<()> = OnceCell::new();
 
-/// `with_env_filter` must be called before a test is run.
+/// `with_targets` must be called before a test is run.
 /// This is fortunately automatically done by the test_span macro
 ///
-/// if `with_env_filter` panics, this means the global tracing subscriber has already been set.
+/// if `with_targets` panics, this means the global tracing subscriber has already been set.
 /// look for other crates that might do that.
-pub fn with_env_filter(filter: EnvFilter) {
+pub fn with_targets(targets: Targets) {
     INIT.get_or_init(|| {
     tracing_subscriber::registry()
-        .with(filter)
-        .with(Layer {})
+    .with(targets)
+    .with(Layer {})
         .try_init().expect("couldn't set test-span subscriber as a default, maybe tracing has already been initialized somewhere else ?")
     });
 }
 
-/// `init_default` is the default way to call `with_env_filter`,
+/// `init_default` is the default way to call `with_targets`,
 /// it sets up `Level::DEBUG` and looks for environment variables to filter spans.
 pub fn init_default() {
-    with_env_filter(EnvFilter::from_default_env().add_directive(Level::DEBUG.into()))
+    with_targets(Targets::new().with_default(Level::DEBUG))
 }
 
 /// Unlike its `get_logs` counterpart provided by the trace_span macro,

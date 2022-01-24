@@ -28,32 +28,6 @@ mod traced_span_tests {
         assert_eq!(logs, get_logs());
     }
 
-    #[test_span]
-    #[level(tracing::Level::INFO)]
-    fn tracing_macro_works_with_other_level() {
-        let res = do_sync_stuff();
-
-        assert_eq!(res, 104);
-
-        let res2 = do_sync_stuff();
-
-        assert_eq!(res2, 104);
-
-        let (spans, logs) = get_telemetry();
-
-        assert!(logs.contains_message("here i am!"));
-        assert!(logs.contains_value("number", RecordValue::Value(52.into())));
-        assert!(
-            !logs.contains_message("debug: here i am again!"),
-            "DEBUG logs shouldn't appear since we explicitly asked for INFO and below.",
-        );
-        insta::assert_json_snapshot!(logs);
-        insta::assert_json_snapshot!(spans);
-
-        assert_eq!(spans, get_spans());
-        assert_eq!(logs, get_logs());
-    }
-
     #[test_span(tokio::test)]
     async fn async_tracing_macro_works() {
         let expected = (104, 104);
