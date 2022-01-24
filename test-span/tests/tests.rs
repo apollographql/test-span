@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod traced_span_tests {
-    use test_span::reexports::tracing::Level;
     use test_span::{prelude::*, RecordValue};
     use tracing::Instrument;
 
@@ -21,32 +20,6 @@ mod traced_span_tests {
         assert!(logs.contains_message("here i am again!"));
         assert!(logs.contains_message("debug: here i am again!"),);
 
-        insta::assert_json_snapshot!(logs);
-        insta::assert_json_snapshot!(spans);
-
-        assert_eq!(spans, get_spans());
-        assert_eq!(logs, get_logs());
-    }
-
-    #[test_span]
-    #[level(tracing::Level::INFO)]
-    fn tracing_macro_works_with_other_level() {
-        let res = do_sync_stuff();
-
-        assert_eq!(res, 104);
-
-        let res2 = do_sync_stuff();
-
-        assert_eq!(res2, 104);
-
-        let (spans, logs) = get_telemetry();
-
-        assert!(logs.contains_message("here i am!"));
-        assert!(logs.contains_value("number", RecordValue::Value(52.into())));
-        assert!(
-            !logs.contains_message("debug: here i am again!"),
-            "DEBUG logs shouldn't appear since we explicitly asked for INFO and below.",
-        );
         insta::assert_json_snapshot!(logs);
         insta::assert_json_snapshot!(spans);
 
@@ -94,9 +67,16 @@ mod traced_span_tests {
             root_id
         };
 
-        let get_telemetry = || test_span::get_telemetry_for_root(&root_id, &Level::DEBUG);
+        let get_telemetry = || {
+            test_span::get_telemetry_for_root(
+                &root_id,
+                &::test_span::Filter::new(tracing::Level::DEBUG),
+            )
+        };
 
         let (spans, logs) = get_telemetry();
+
+        dbg!(&logs);
 
         assert!(logs.contains_message("here i am!"));
         assert!(logs.contains_value("number", RecordValue::Value(52.into())));
@@ -127,7 +107,12 @@ mod traced_span_tests {
             .await;
             root_id
         };
-        let get_telemetry = || test_span::get_telemetry_for_root(&root_id, &tracing::Level::INFO);
+        let get_telemetry = || {
+            test_span::get_telemetry_for_root(
+                &root_id,
+                &::test_span::Filter::new(tracing::Level::INFO),
+            )
+        };
 
         let (spans, logs) = get_telemetry();
 
@@ -152,11 +137,12 @@ mod traced_span_tests {
         assert!(!test_run_logs.contains_message("will only show up in get_all_logs!"));
         assert!(!test_run_logs.contains_message("will only show up in DEBUG get_all_logs!"));
 
-        let all_logs = test_span::get_all_logs(&tracing::Level::INFO);
+        let all_logs = test_span::get_all_logs(&::test_span::Filter::new(tracing::Level::INFO));
         assert!(all_logs.contains_message("will only show up in get_all_logs!"));
         assert!(!all_logs.contains_message("will only show up in DEBUG get_all_logs!"));
 
-        let all_debug_logs = test_span::get_all_logs(&tracing::Level::DEBUG);
+        let all_debug_logs =
+            test_span::get_all_logs(&::test_span::Filter::new(tracing::Level::DEBUG));
         assert!(all_debug_logs.contains_message("will only show up in get_all_logs!"));
         assert!(all_debug_logs.contains_message("will only show up in DEBUG get_all_logs!"));
     }
