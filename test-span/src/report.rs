@@ -56,8 +56,8 @@ impl Filter {
 
 /// A tree which is effectively a Tree containing all the spans
 ///
-/// It can't do much yet, except being Serialized / Deserialized, which comes in handy for snapshots.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+/// It can't do much yet, except being Serialized, which comes in handy for snapshots.
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct Span {
     // the span id
     #[serde(skip_serializing)]
@@ -67,7 +67,19 @@ pub struct Span {
     // the recorded variables and logs
     record: RecordWithMetadata,
     // the node's children
-    children: LinkedHashMap<String, Span>,
+    children: LinkedHashMap<ChildKey, Span>,
+}
+
+#[derive(Default, Debug, Hash, PartialEq, Eq)]
+struct ChildKey(String, usize);
+
+impl Serialize for ChildKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
 }
 
 impl Span {
@@ -211,15 +223,13 @@ impl Report {
 
                 let span_name = format!("{}::{}", metadata.target, metadata.name);
 
-                let span_key = format!("{} - {}", span_name, child_node.index());
-
                 let mut contents = child_recorder.contents(filter);
                 contents.append(self.logs.record_for_span_id_and_filter(*child_id, filter));
 
-                let mut child_span = Span::from(span_name, *child_id, contents);
+                let mut child_span = Span::from(span_name.clone(), *child_id, contents);
                 self.dfs_span_insert(&mut child_span, child_node, filter);
 
-                Some((span_key, child_span))
+                Some((ChildKey(span_name, child_node.index()), child_span))
             })
             .collect();
     }
