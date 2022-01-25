@@ -4,6 +4,7 @@ mod traced_span_tests {
     use tracing::Instrument;
 
     #[test_span]
+    #[level(tracing::Level::DEBUG)]
     fn tracing_macro_works() {
         let res = do_sync_stuff();
 
@@ -46,12 +47,32 @@ mod traced_span_tests {
         assert_eq!(logs, get_logs());
     }
 
+    #[test_span(tokio::test)]
+    #[level(tracing::Level::DEBUG)]
+    async fn async_tracing_macro_works_with_other_level() {
+        let expected = (104, 104);
+        let actual = futures::join!(do_async_stuff(), do_async_stuff());
+        assert_eq!(expected, actual);
+
+        let (spans, logs) = get_telemetry();
+
+        assert!(logs.contains_message("here i am!"));
+        assert!(logs.contains_value("number", RecordValue::Value(52.into())));
+        assert!(logs.contains_message("in a separate context!"));
+
+        insta::assert_json_snapshot!(logs);
+        insta::assert_json_snapshot!(spans);
+
+        assert_eq!(spans, get_spans());
+        assert_eq!(logs, get_logs());
+    }
+
     #[test]
     fn tracing_works() {
         test_span::init();
 
         let root_id = {
-            let root_span = test_span::reexports::tracing::span!(::tracing::Level::DEBUG, "root");
+            let root_span = test_span::reexports::tracing::span!(::tracing::Level::ERROR, "root");
 
             let root_id = root_span
                 .id()
@@ -70,7 +91,7 @@ mod traced_span_tests {
         let get_telemetry = || {
             test_span::get_telemetry_for_root(
                 &root_id,
-                &::test_span::Filter::new(tracing::Level::DEBUG),
+                &::test_span::Filter::new(tracing::Level::INFO),
             )
         };
 
