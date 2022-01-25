@@ -1,6 +1,6 @@
 ---
 source: test-span/tests/tests.rs
-assertion_line: 103
+assertion_line: 105
 expression: spans
 
 ---
@@ -11,7 +11,7 @@ expression: spans
     "metadata": {
       "name": "root",
       "target": "tests::traced_span_tests",
-      "level": "DEBUG",
+      "level": "ERROR",
       "module_path": "tests::traced_span_tests",
       "fields": {
         "names": []
@@ -19,7 +19,7 @@ expression: spans
     }
   },
   "children": {
-    "tests::traced_span_tests::do_sync_stuff - 1": {
+    "tests::traced_span_tests::do_sync_stuff": {
       "name": "tests::traced_span_tests::do_sync_stuff",
       "record": {
         "entries": [
@@ -43,7 +43,7 @@ expression: spans
         }
       },
       "children": {
-        "my_crate::an_other_target::do_sync_stuff2 - 2": {
+        "my_crate::an_other_target::do_sync_stuff2": {
           "name": "my_crate::an_other_target::do_sync_stuff2",
           "record": {
             "entries": [
@@ -54,10 +54,6 @@ expression: spans
               [
                 "message",
                 "here i am again!"
-              ],
-              [
-                "message",
-                "debug: here i am again!"
               ]
             ],
             "metadata": {
@@ -76,7 +72,7 @@ expression: spans
         }
       }
     },
-    "tests::traced_span_tests::do_sync_stuff - 3": {
+    "tests::traced_span_tests::do_sync_stuff": {
       "name": "tests::traced_span_tests::do_sync_stuff",
       "record": {
         "entries": [
@@ -100,7 +96,7 @@ expression: spans
         }
       },
       "children": {
-        "my_crate::an_other_target::do_sync_stuff2 - 4": {
+        "my_crate::an_other_target::do_sync_stuff2": {
           "name": "my_crate::an_other_target::do_sync_stuff2",
           "record": {
             "entries": [
@@ -111,10 +107,6 @@ expression: spans
               [
                 "message",
                 "here i am again!"
-              ],
-              [
-                "message",
-                "debug: here i am again!"
               ]
             ],
             "metadata": {

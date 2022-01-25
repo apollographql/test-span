@@ -71,7 +71,7 @@ static INIT: Lazy<()> = Lazy::new(|| {
 });
 
 /// `init_default` is the default way to call `with_targets`,
-/// it sets up `Level::DEBUG` and looks for environment variables to filter spans.
+/// it sets up `Level::INFO` and looks for environment variables to filter spans.
 pub fn init() {
     Lazy::force(&INIT);
 }

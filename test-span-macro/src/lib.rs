@@ -22,7 +22,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let fn_attrs = &test_fn.attrs;
 
-    let mut level = quote!(::test_span::reexports::tracing::Level::DEBUG);
+    let mut level = quote!(::test_span::reexports::tracing::Level::INFO);
 
     let mut target_directives: Vec<_> = Vec::new();
 
