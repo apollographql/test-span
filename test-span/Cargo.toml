@@ -1,6 +1,6 @@
 [package]
 name = "test-span"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Jeremy Lempereur <jeremy@apollographql.com>"]
 edition = "2021"
 description = "macro and utilities to do snapshot tests on tracing spans"
