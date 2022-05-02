@@ -67,6 +67,26 @@ mod traced_span_tests {
         assert_eq!(logs, get_logs());
     }
 
+    #[test_span(tokio::test)]
+    #[level(tracing::Level::DEBUG)]
+    async fn async_tracing_macro_works_with_filter_parent_span() {
+        let expected = (104, 156);
+        let actual = futures::join!(do_async_stuff(), do_async_trace_stuff());
+        assert_eq!(expected, actual);
+
+        let (spans, logs) = get_telemetry();
+
+        assert!(logs.contains_message("here i am!"));
+        assert!(logs.contains_value("number", RecordValue::Value(52.into())));
+        assert!(logs.contains_message("in a separate context!"));
+
+        insta::assert_json_snapshot!(logs);
+        insta::assert_json_snapshot!(spans);
+
+        assert_eq!(spans, get_spans());
+        assert_eq!(logs, get_logs());
+    }
+
     #[test]
     fn tracing_works() {
         test_span::init();
@@ -204,6 +224,20 @@ mod traced_span_tests {
         tracing::info!(number);
 
         number * 2
+    }
+
+    #[tracing::instrument(name = "do_async_trace_stuff", level = "trace")]
+    async fn do_async_trace_stuff() -> u8 {
+        tracing::trace!("here i am! trace level");
+        let number = do_async_stuff_2(42).await;
+
+        tokio::task::spawn_blocking(|| async { tracing::trace!("in a separate trace context!") })
+            .await
+            .unwrap()
+            .await;
+        tracing::info!(number);
+
+        number + do_async_stuff().await
     }
 
     #[tracing::instrument(
