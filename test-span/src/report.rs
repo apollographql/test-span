@@ -117,8 +117,10 @@ impl Report {
             .collect();
 
         let relevant_spans = node_to_id.values().cloned().collect::<HashSet<_>>();
-        let all_spans = ALL_SPANS.lock().unwrap().clone();
-        let spans = all_spans
+        let spans = ALL_SPANS
+            .lock()
+            .unwrap()
+            .clone()
             .into_iter()
             .filter(|(span_id, _)| relevant_spans.contains(span_id))
             .collect();
