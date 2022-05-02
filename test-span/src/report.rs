@@ -16,6 +16,7 @@ use crate::LazyMutex;
 
 pub(crate) static ALL_DAGS: LazyMutex<IndexMap<u64, Dag<u64, ()>>> = Lazy::new(Default::default);
 
+#[derive(Debug)]
 pub struct Filter {
     default_level: Level,
     targets: HashMap<String, Level>,
@@ -116,15 +117,11 @@ impl Report {
             .collect();
 
         let relevant_spans = node_to_id.values().cloned().collect::<HashSet<_>>();
-
-        let spans = ALL_SPANS
-            .lock()
-            .unwrap()
-            .clone()
+        let all_spans = ALL_SPANS.lock().unwrap().clone();
+        let spans = all_spans
             .into_iter()
             .filter(|(span_id, _)| relevant_spans.contains(span_id))
             .collect();
-
         let logs = ALL_LOGS.lock().unwrap().for_spans(relevant_spans);
 
         let dag = ALL_DAGS
@@ -203,7 +200,7 @@ impl Report {
     fn dfs_span_insert(&self, current_span: &mut Span, current_node: NodeIndex, filter: &Filter) {
         current_span.children = self
             .sorted_children(current_node)
-            .filter_map(|child_node| {
+            .flat_map(|child_node| {
                 let child_id = self
                     .node_to_id
                     .get(&child_node)
@@ -217,19 +214,25 @@ impl Report {
                     .metadata()
                     .expect("couldn't find metadata for child record");
 
-                if !filter.is_enabled(metadata) {
-                    return None;
-                }
-
                 let span_name = format!("{}::{}", metadata.target, metadata.name);
-
                 let mut contents = child_recorder.contents(filter);
                 contents.append(self.logs.record_for_span_id_and_filter(*child_id, filter));
 
-                let mut child_span = Span::from(span_name.clone(), *child_id, contents);
-                self.dfs_span_insert(&mut child_span, child_node, filter);
+                if !filter.is_enabled(metadata) {
+                    // We continue to fetch children spans with an enabled filter
+                    let mut child_span = Span::from(span_name, *child_id, contents);
+                    self.dfs_span_insert(&mut child_span, child_node, filter);
 
-                Some((ChildKey(span_name, child_node.index()), child_span))
+                    child_span
+                        .children
+                        .into_iter()
+                        .collect::<Vec<(ChildKey, Span)>>()
+                } else {
+                    let mut child_span = Span::from(span_name.clone(), *child_id, contents);
+                    self.dfs_span_insert(&mut child_span, child_node, filter);
+
+                    vec![(ChildKey(span_name, child_node.index()), child_span)]
+                }
             })
             .collect();
     }
@@ -241,7 +244,6 @@ impl Report {
             .iter(&self.dag)
             .map(|(_, node)| node)
             .collect::<Vec<_>>();
-
         children.sort();
 
         children.into_iter()
