@@ -52,6 +52,7 @@ use layer::Layer;
 use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
 use tracing::Id;
+use tracing_core::dispatcher;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 type LazyMutex<T> = Lazy<Arc<Mutex<T>>>;
 
@@ -65,9 +66,16 @@ pub use record::{Record, RecordValue};
 pub use report::{Filter, Records, Report, Span};
 
 static INIT: Lazy<()> = Lazy::new(|| {
-    tracing_subscriber::registry()
-    .with(Layer {})
-        .try_init().expect("couldn't set test-span subscriber as a default, maybe tracing has already been initialized somewhere else ?")
+    if dispatcher::has_been_set() {
+        dispatcher::get_default(|dispatcher| {
+            assert!(dispatcher.is::<Layer>(), "A tracing global subscriber has already been set by an other crate than test-span, cannot proceed");
+        })
+    } else {
+        let dispatcher = tracing_subscriber::registry().with(Layer {});
+        dispatcher
+            .try_init()
+            .expect("couldn't set test-span subscriber as a default")
+    }
 });
 
 /// `init_default` is the default way to call `with_targets`,
@@ -119,4 +127,18 @@ pub mod reexports {
     pub use tracing;
     pub use tracing_futures;
     pub use tracing_subscriber;
+}
+
+#[cfg(test)]
+mod test_span_doesnt_panic_tests {
+    use super::*;
+
+    #[test]
+    fn init_with_already_set_test_span_global_subscriber_doesnt_panic() {
+        tracing_subscriber::registry()
+            .with(Layer {})
+            .try_init()
+            .unwrap();
+        init();
+    }
 }
