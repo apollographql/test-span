@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
@@ -70,9 +71,9 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let run_test = if maybe_async.is_some() {
-        async_test()
+        async_test(test_name)
     } else {
-        sync_test()
+        sync_test(test_name)
     };
 
     let ret = quote! {#output_type};
@@ -84,7 +85,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
       #(#fn_attrs)*
       #maybe_async fn #test_name() #ret {
         use ::test_span::reexports::tracing::Instrument;
-        #maybe_async fn inner_test(get_telemetry: impl Fn() -> (::test_span::Span, ::test_span::Records), get_logs: impl Fn() -> ::test_span::Records, get_spans: impl Fn() -> ::test_span::Span) #ret
+        #maybe_async fn #test_name(get_telemetry: impl Fn() -> (::test_span::Span, ::test_span::Records), get_logs: impl Fn() -> ::test_span::Records, get_spans: impl Fn() -> ::test_span::Span) #ret
           #body
 
 
@@ -96,17 +97,17 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-fn async_test() -> TokenStream2 {
+fn async_test(test_name: &Ident) -> TokenStream2 {
     quote! {
-        inner_test(get_telemetry, get_logs, get_spans)
+        #test_name(get_telemetry, get_logs, get_spans)
             .instrument(root_span).await
     }
 }
 
-fn sync_test() -> TokenStream2 {
+fn sync_test(test_name: &Ident) -> TokenStream2 {
     quote! {
         root_span.in_scope(|| {
-            inner_test(get_telemetry, get_logs, get_spans)
+            #test_name(get_telemetry, get_logs, get_spans)
         });
     }
 }
