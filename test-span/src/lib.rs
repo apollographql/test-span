@@ -48,7 +48,6 @@
 //!  └───────────┘   └───────────┘
 //! ```
 
-use layer::Layer;
 use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
 use tracing::Id;
@@ -62,6 +61,7 @@ mod log;
 mod record;
 mod report;
 
+pub use layer::Layer;
 pub use record::{Record, RecordValue};
 pub use report::{Filter, Records, Report, Span};
 
