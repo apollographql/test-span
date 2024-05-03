@@ -12,6 +12,11 @@ keywords = ["tracing", "span", "log", "test", "snapshot"]
 categories = ["development-tools::testing"]
 license = "MIT OR Apache-2.0"
 
+[features]
+default = [
+    "serde_json/preserve_order"
+]
+
 [dependencies]
 daggy = { version = "0.8.0", features = ["serde-1", "stable_dag"] }
 serde = { version = "1.0.131", features = ["derive"] }
