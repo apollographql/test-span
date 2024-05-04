@@ -33,7 +33,7 @@ tracing-core = "0.1.21"
 linked-hash-map = { version = "0.5.4", features = ["serde_impl"] }
 
 [dev-dependencies]
-insta = { version = "1.8.0", features = ["json"] }
+insta = { version = "1.38.0", features = ["json"] }
 futures = "0.3.19"
 
 [[test]]
