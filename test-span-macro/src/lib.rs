@@ -4,7 +4,6 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 use syn::parse_macro_input;
-use syn::AttributeArgs;
 use syn::ExprAssign;
 use syn::ItemFn;
 use syn::Path;
@@ -12,13 +11,12 @@ use syn::ReturnType;
 
 #[proc_macro_attribute]
 pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let attrs = parse_macro_input!(attr as AttributeArgs);
     let test_fn = parse_macro_input!(item as ItemFn);
 
-    let macro_attrs = if attrs.as_slice().is_empty() {
+    let macro_attrs = if attr.is_empty() {
         quote! { test }
     } else {
-        quote! {#(#attrs)*}
+        attr.into()
     };
 
     let fn_attrs = &test_fn.attrs;
@@ -31,7 +29,7 @@ pub fn test_span(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_attrs = fn_attrs
         .iter()
         .filter(|attr| {
-            let path = &attr.path;
+            let path = &attr.path();
             match quote!(#path).to_string().as_str() {
                 "level" => {
                     let value: Path = attr.parse_args().expect(
