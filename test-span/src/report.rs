@@ -108,12 +108,13 @@ impl Report {
         let id_to_node = SPAN_ID_TO_ROOT_AND_NODE_INDEX.lock().unwrap().clone();
         let (global_root, root_node_index) = id_to_node
             .get(&root_node)
-            .map(std::clone::Clone::clone)
+            .copied()
             .expect("couldn't find rood node");
 
         let node_to_id: IndexMap<NodeIndex, u64> = id_to_node
             .into_iter()
-            .filter_map(|(key, (root, value))| (root == global_root).then(|| (value, key)))
+            .filter(|&(_key, (root, _value))| root == global_root)
+            .map(|(key, (_root, value))| (value, key))
             .collect();
 
         let relevant_spans = node_to_id.values().cloned().collect::<HashSet<_>>();
@@ -165,8 +166,6 @@ impl Report {
         if let Some(recorder) = self.spans.get(&self.root_id) {
             let metadata = recorder
                 .metadata()
-                .as_ref()
-                .map(std::clone::Clone::clone)
                 .expect("recorder without metadata");
             let span_name = format!("{}::{}", metadata.target, metadata.name);
 
@@ -194,7 +193,7 @@ impl Report {
                 .contents(filter);
 
             child_record.append(self.logs.record_for_span_id_and_filter(*child_id, filter));
-            records.extend(child_record.entries().cloned().into_iter());
+            records.extend(child_record.entries().cloned());
             self.dfs_logs_insert(records, child_node, filter);
         }
     }

@@ -46,21 +46,20 @@ impl LogsRecorder {
     ) -> Vec<Record> {
         self.recorders
             .iter()
-            .filter_map(|(log_metadata, recorders)| {
-                (filter.is_enabled(log_metadata) && log_metadata.span_id == Some(span_id))
-                    .then(|| recorders.contents().cloned())
+            .filter(|(log_metadata, _recorders)| {
+                filter.is_enabled(log_metadata) && log_metadata.span_id == Some(span_id)
             })
-            .flatten()
+            .flat_map(|(_log_metadata, recorders)| recorders.contents().cloned())
             .collect()
     }
 
     pub fn all_records_for_filter(&self, filter: &crate::Filter) -> Vec<Record> {
         self.recorders
             .iter()
-            .filter_map(|(log_metadata, recorders)| {
-                (filter.is_enabled(log_metadata)).then(|| recorders.contents().cloned())
+            .filter(|(log_metadata, _recorders)| {
+                filter.is_enabled(log_metadata)
             })
-            .flatten()
+            .flat_map(|(_log_metadata, recorders)| recorders.contents().cloned())
             .collect()
     }
 }

@@ -32,7 +32,7 @@ impl Layer {
 
     fn event(&self, event: &Event<'_>, ctx: Context<'_, impl tracing::Subscriber>) {
         let current_span = ctx.current_span();
-        let current_span = current_span.id().map(std::clone::Clone::clone);
+        let current_span = current_span.id().cloned();
         ALL_LOGS.lock().unwrap().event(current_span, event);
     }
 
@@ -52,7 +52,7 @@ impl Layer {
 
             let (root_span_id, parent_node_index) = id_to_node_index
                 .get(&raw_parent_id)
-                .map(std::clone::Clone::clone)
+                .copied()
                 .unwrap_or_else(|| panic!("missing parent attributes for {}.", raw_parent_id));
 
             let (_, node_index) =
@@ -106,8 +106,8 @@ where
     ) {
         let maybe_parent_id = attrs
             .parent()
-            .map(std::clone::Clone::clone)
-            .or_else(|| ctx.current_span().id().map(std::clone::Clone::clone));
+            .cloned()
+            .or_else(|| ctx.current_span().id().cloned());
 
         self.attributes(id.clone(), attrs, maybe_parent_id)
     }
