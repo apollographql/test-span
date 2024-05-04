@@ -1,6 +1,6 @@
 [package]
 name = "test-span-macro"
-version = "0.7.0"
+version = "0.8.0"
 authors = [
     "Jeremy Lempereur <jeremy@apollographql.com>",
     "Benjamin Coenen <benjamin.coenen@apollographql.com>",

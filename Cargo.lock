@@ -632,7 +632,7 @@ dependencies = [
 
 [[package]]
 name = "test-span"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "daggy",
  "derivative",
@@ -653,7 +653,7 @@ dependencies = [
 
 [[package]]
 name = "test-span-macro"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
