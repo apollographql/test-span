@@ -56,9 +56,7 @@ impl LogsRecorder {
     pub fn all_records_for_filter(&self, filter: &crate::Filter) -> Vec<Record> {
         self.recorders
             .iter()
-            .filter(|(log_metadata, _recorders)| {
-                filter.is_enabled(log_metadata)
-            })
+            .filter(|(log_metadata, _recorders)| filter.is_enabled(log_metadata))
             .flat_map(|(_log_metadata, recorders)| recorders.contents().cloned())
             .collect()
     }
