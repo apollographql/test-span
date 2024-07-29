@@ -8,7 +8,7 @@ jobs:
     environment:
       CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     docker:
-      - image: cimg/rust:1.57.0
+      - image: cimg/rust:1.76.0
     steps:
       - checkout
       - restore_cache:
@@ -26,6 +26,10 @@ jobs:
             - target/
 
 workflows:
+  test:
+    jobs:
+      - build:
+          name: Tests
   security-scans:
     jobs:
       - secops/gitleaks:

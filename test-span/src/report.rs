@@ -164,9 +164,7 @@ impl Report {
 
     pub fn spans(&self, filter: &Filter) -> Span {
         if let Some(recorder) = self.spans.get(&self.root_id) {
-            let metadata = recorder
-                .metadata()
-                .expect("recorder without metadata");
+            let metadata = recorder.metadata().expect("recorder without metadata");
             let span_name = format!("{}::{}", metadata.target, metadata.name);
 
             let mut root_span = Span::from(span_name, self.root_id, recorder.contents(filter));
