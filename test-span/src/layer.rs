@@ -53,13 +53,13 @@ impl Layer {
             let (root_span_id, parent_node_index) = id_to_node_index
                 .get(&raw_parent_id)
                 .copied()
-                .unwrap_or_else(|| panic!("missing parent attributes for {}.", raw_parent_id));
+                .unwrap_or_else(|| panic!("missing parent attributes for {raw_parent_id}."));
 
             let (_, node_index) =
                 if let Some(span_dag) = ALL_DAGS.lock().unwrap().get_mut(&root_span_id) {
                     span_dag.add_child(parent_node_index, (), raw_span_id)
                 } else {
-                    panic!("missing dag for root {}", root_span_id);
+                    panic!("missing dag for root {root_span_id}");
                 };
 
             id_to_node_index.insert(raw_span_id, (root_span_id, node_index));

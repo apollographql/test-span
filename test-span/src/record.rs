@@ -75,7 +75,7 @@ impl Visit for RecordEverything {
     fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
         self.0.push((
             field.name().to_string(),
-            RecordValue::Debug(format!("{:?}", value)),
+            RecordValue::Debug(format!("{value:?}")),
         ));
     }
 }
